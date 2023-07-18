@@ -1,0 +1,719 @@
+{
+  "$schema": "http://json-schema.org/draft-06/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^(0[1-9]|[12]\\d|3[01])\\.(0[1-9]|1[0-2])\\.(19|20)\\d\\d\\s((2[0-3])|([0-1]\\d))\\:([0-5]\\d)\\:([0-5]\\d)$"
+    },
+    "external_id": {
+      "type": "string",
+      "maxLength": 128
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "callback_url": {
+          "type": "string",
+          "maxLength": 256,
+          "pattern": "^http(s?)\\:\\/\\/[0-9a-zA-Zа-яА-Я]([-.\\w]*[0-9a-zA-Zа-яА-Я])*(:(0-9)*)*(\\/?)([a-zA-Z0-9а-яА-Я\\-\\.\\?\\,\\'\\/\\\\\\+&=%\\$#_]*)?$"
+        }
+      }
+    },
+    "ism_optional": {
+      "type": "boolean"
+    },
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "client": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "inn": {
+              "type": "string",
+              "pattern": "(^[0-9]{10}$)|(^[0-9]{12}$)"
+            },
+            "birthdate": {
+              "type": "string",
+              "pattern": "(0[0-9]|[1-2]\\d|3[01])[.](0[1-9]|1[012])[.](19|20)\\d\\d",
+              "minLength": 10,
+              "maxLength": 10
+            },
+            "citizenship": {
+              "type": "string",
+              "maxLength": 3
+
+            },
+            "document_code": {
+              "type": "string",
+              "maxLength": 2
+            },
+            "document_data": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "address": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "email": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "phone": {
+              "type": "string",
+              "pattern": "^(none|\\+[0-9]{1,18})$"
+            }
+          },
+          "anyOf": [
+            {
+              "required": [
+                "email"
+              ]
+            },
+            {
+              "required": [
+                "phone"
+              ]
+            }
+          ]
+        },
+        "company": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "email": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "sno": {
+              "enum": [
+                "osn",
+                "usn_income",
+                "usn_income_outcome",
+                "envd",
+                "esn",
+                "patent"
+              ]
+            },
+            "inn": {
+              "type": "string",
+              "pattern": "(^[0-9]{10}$)|(^[0-9]{12}$)"
+            },
+            "payment_address": {
+              "type": "string",
+              "maxLength": 256
+            },
+            "location": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          "required": [
+            "email",
+            "sno",
+            "inn",
+            "payment_address"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string",
+                "maxLength": 128
+              },
+              "price": {
+                "$ref": "#/definitions/number_price"
+              },
+              "quantity": {
+                "type": "number",
+                "minimum": 0.001,
+                "maximum": 99999.999,
+                "multipleOf": 0.001
+              },
+              "measure": {
+                "enum": [
+                  0,
+                  10,
+                  11,
+                  12,
+                  20,
+                  21,
+                  22,
+                  30,
+                  31,
+                  32,
+                  40,
+                  41,
+                  42,
+                  50,
+                  51,
+                  70,
+                  71,
+                  72,
+                  73,
+                  80,
+                  81,
+                  82,
+                  83,
+                  255
+                ]
+              },
+              "sum": {
+                "$ref": "#/definitions/number_price"
+              },
+              "payment_method": {
+                "enum": [
+                  "full_prepayment",
+                  "prepayment",
+                  "advance",
+                  "full_payment",
+                  "partial_payment",
+                  "credit",
+                  "credit_payment"
+                ]
+              },
+              "payment_object": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 27
+                  },
+                  {
+                    "type": "integer",
+                    "minimum": 30,
+                    "maximum": 33
+                  }
+                ]
+              },
+              "vat": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "none",
+                      "vat0",
+                      "vat10",
+                      "vat110",
+                      "vat20",
+                      "vat120"
+                    ]
+                  },
+                  "sum": {
+                    "$ref": "#/definitions/number_two_format"
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "user_data": {
+                "type": "string",
+                "maxLength": 64
+              },
+              "excise": {
+                "$ref": "#/definitions/number_two_format"
+              },
+              "country_code": {
+                "type": "string",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "declaration_number": {
+                "type": "string",
+                "maxLength": 32
+              },
+              "mark_quantity": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "numerator": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "denominator": {
+                    "type": "integer",
+                    "minimum": 1
+                  }
+                },
+                "required": [
+                  "numerator",
+                  "denominator"
+                ]
+              },
+              "mark_processing_mode": {
+                "enum": [
+                  "0"
+                ]
+              },
+              "sectoral_item_props": {
+                "type": "array",
+                "items": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "federal_id": {
+                        "type": "string",
+                        "pattern": "(^00[1-9]{1}$)|(^0[1-6]{1}[0-9]{1}$)|(^07[0-3]{1}$)"
+                      },
+                      "date": {
+                        "type": "string",
+                        "pattern": "^(0[1-9]|[12]\\d|3[01])\\.(0[1-9]|1[0-2])\\.(19|20)\\d\\d$"
+                      },
+                      "number": {
+                        "type": "string",
+                        "maxLength": 32
+                      },
+                      "value": {
+                        "type": "string",
+                        "maxLength": 256
+                      }
+                    },
+                    "required": [
+                      "federal_id",
+                      "date",
+                      "number",
+                      "value"
+                    ]
+                  }
+                ]
+              },
+              "mark_code": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "unknown": {
+                    "type": "string",
+                    "maxLength": 32
+
+                  },
+                  "ean8": {
+                    "type": "string",
+                    "maxLength": 8,
+                    "minLength": 8
+                  },
+                  "ean13": {
+                    "type": "string",
+                    "maxLength": 13,
+                    "minLength": 13
+                  },
+                  "itf14": {
+                    "type": "string",
+                    "maxLength": 14,
+                    "minLength": 14
+                  },
+                  "gs10": {
+                    "type": "string",
+                    "maxLength": 38
+                  },
+                  "gs1m": {
+                    "type": "string",
+                    "format": "base64",
+                    "maxLength": 200
+                  },
+                  "short": {
+                    "type": "string",
+                    "maxLength": 38
+                  },
+                  "fur": {
+                    "type": "string",
+                    "pattern": "(^.{2}-[0-9]{6}-.{10}$)"
+                  },
+                  "egais20": {
+                    "type": "string",
+                    "maxLength": 23,
+                    "minLength": 23
+                  },
+                  "egais30": {
+                    "type": "string",
+                    "maxLength": 14,
+                    "minLength": 14
+                  }
+                },
+                "oneOf": [
+                  {
+                    "required": [
+                      "unknown"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "ean8"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "ean13"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "itf14"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "gs10"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "gs1m"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "short"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "fur"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "egais20"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "egais30"
+                    ]
+                  }
+                ]
+              },
+              "agent_info": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "type": {
+                    "enum": [
+                      "bank_paying_agent",
+                      "bank_paying_subagent",
+                      "paying_agent",
+                      "paying_subagent",
+                      "attorney",
+                      "commission_agent",
+                      "another"
+                    ]
+                  },
+                  "paying_agent": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "operation": {
+                        "type": "string",
+                        "maxLength": 24
+                      },
+                      "phones": {
+                        "type": "array",
+                        "items": [
+                          {
+                            "$ref": "#/definitions/phone_number"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "phones"
+                    ]
+                  },
+                  "receive_payments_operator": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "phones": {
+                        "type": "array",
+                        "items": [
+                          {
+                            "$ref": "#/definitions/phone_number"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "phones"
+                    ]
+                  },
+                  "money_transfer_operator": {
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "phones": {
+                        "type": "array",
+                        "items": [
+                          {
+                            "$ref": "#/definitions/phone_number"
+                          }
+                        ]
+                      },
+                      "name": {
+                        "type": "string",
+                        "maxLength": 64
+                      },
+                      "address": {
+                        "type": "string",
+                        "maxLength": 256
+                      },
+                      "inn": {
+                        "type": "string",
+                        "pattern": "(^[0-9]{10}$)|(^[0-9]{12}$)"
+                      }
+                    }
+                  }
+                },
+                "required": [
+                  "type"
+                ]
+              },
+              "supplier_info": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "phones": {
+                    "type": "array",
+                    "items": [
+                      {
+                        "$ref": "#/definitions/phone_number"
+                      }
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 256
+                  },
+                  "inn": {
+                    "type": "string",
+                    "pattern": "(^[0-9]{10}$)|(^[0-9]{12}$)"
+                  }
+                }
+              }
+            },
+            "required": [
+              "name",
+              "price",
+              "quantity",
+              "measure",
+              "sum",
+              "payment_method",
+              "payment_object",
+              "vat"
+            ],
+            "dependencies": {
+              "agent_info": [ "supplier_info" ]
+            }
+          }
+        },
+        "payments": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10,
+          "items": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "$ref": "#/definitions/type_format"
+                },
+                "sum": {
+                  "$ref": "#/definitions/number_two_format"
+                }
+              },
+              "required": [
+                "type",
+                "sum"
+              ]
+            }
+          ]
+        },
+        "vats": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 6,
+          "items": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "enum": [
+                    "none",
+                    "vat0",
+                    "vat10",
+                    "vat110",
+                    "vat20",
+                    "vat120"
+                  ]
+                },
+                "sum": {
+                  "$ref": "#/definitions/number_two_format"
+                }
+              },
+              "required": [
+                "type",
+                "sum"
+              ]
+            }
+          ]
+        },
+        "cashier": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "cashier_inn": {
+          "type": "string",
+          "pattern": "(^[0-9]{12}$)"
+        },
+        "additional_check_props": {
+          "type": "string",
+          "maxLength": 16
+        },
+        "total": {
+          "$ref": "#/definitions/number_two_format"
+        },
+        "additional_user_props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 256
+            }
+          },
+          "required": [
+            "name",
+            "value"
+          ]
+        },
+        "operating_check_props": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "enum": [
+                "0"
+              ]
+            },
+            "value": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "timestamp": {
+              "type": "string",
+              "pattern": "^(0[1-9]|[12]\\d|3[01])\\.(0[1-9]|1[0-2])\\.(19|20)\\d\\d\\s((2[0-3])|([0-1]\\d))\\:([0-5]\\d)\\:([0-5]\\d)$"
+            }
+          },
+          "required": [
+            "name",
+            "value",
+            "timestamp"
+          ]
+        },
+        "sectoral_check_props": {
+          "type": "array",
+          "items": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "properties": {
+                "federal_id": {
+                  "type": "string",
+                  "pattern": "(^00[1-9]{1}$)|(^0[1-6]{1}[0-9]{1}$)|(^07[0-3]{1}$)"
+                },
+                "date": {
+                  "type": "string",
+                  "pattern": "^(0[1-9]|[12]\\d|3[01])\\.(0[1-9]|1[0-2])\\.(19|20)\\d\\d$"
+                },
+                "number": {
+                  "type": "string",
+                  "maxLength": 32
+                },
+                "value": {
+                  "type": "string",
+                  "maxLength": 256
+                }
+              },
+              "required": [
+                "federal_id",
+                "date",
+                "number",
+                "value"
+              ]
+            }
+          ]
+        },
+        "device_number": {
+          "type": "string",
+          "maxLength": 20
+        }
+      },
+      "required": [
+        "client",
+        "company",
+        "items",
+        "payments",
+        "total"
+      ]
+    }
+  },
+  "definitions": {
+    "number_two_format": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100000000,
+      "multipleOf": 0.01
+    },
+    "number_price": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 42949672.95,
+      "multipleOf": 0.01
+    },
+    "phone_number": {
+      "type": "string",
+      "pattern": "^([^\\s\\\\]{0,17}|\\+[^\\s\\\\]{1,18})$"
+    },
+    "type_format": {
+      "type": "number",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    }
+  },
+  "required": [
+    "timestamp",
+    "external_id",
+    "receipt"
+  ]
+}
