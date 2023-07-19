@@ -1,11 +1,8 @@
 {
     "require": {
-        "slim/slim": "4.*",
-        "slim/psr7": "^1.6",
-        "nyholm/psr7": "^1.8",
-        "nyholm/psr7-server": "^1.0",
-        "guzzlehttp/psr7": "^2",
-        "laminas/laminas-diactoros": "^3.0",
+        "gotzmann/comet": "^2.4",
+        "workerman/mysql": "^1.0",
+      "ext-pdo": "*",
         "guzzlehttp/guzzle": "^7.7"
     },
   "autoload": {

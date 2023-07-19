@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<form method="post" action="/sell">
+    <div>
+        <label for="email">Электронная почта отправителя чека:</label>
+        <input name="email" id="email" value="syspay@gmail.com"/>
+    </div>
+    <div>
+        <label for="sno">Систему налогообложения:</label>
+        <select name="sno" id="sno">
+            <option value="">-- Выберите --</option>
+            <option value="osn">ОСН 20%</option>
+            <option value="usn_income">УСН 6% (Приход)</option>
+            <option value="usn_income_outcome">УСН 15% (Приход-Расход)</option>
+            <option value="envd">ЕНВД</option>
+            <option value="esn">ЕСН</option>
+            <option value="patent">ПАТЕНТ</option>
+        </select>
+    </div>
+    <div>
+        <label for="inn">ИНН организации:</label>
+        <input name="inn" id="inn" value="5544332219"/>
+    </div>
+    <div>
+        <label for="payment_address">Место расчётов:</label>
+        <input name="payment_address" id="payment_address" value="Мой адрес не дом и не улица!"/>
+    </div>
+    <div>
+        <button>Зарегистрировать документ</button>
+    </div>
+</form>
+</body>
+</html>
