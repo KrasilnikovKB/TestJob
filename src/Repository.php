@@ -5,12 +5,16 @@ namespace App;
 use DateTimeImmutable;
 use DateTimeZone;
 use Redis;
+use RedisException;
 use Workerman\MySQL\Connection as DB;
 
 class Repository
 {
     private const REDIS_KEY_EMAIL_PREFIX = 'document:email:';
     private const REDIS_KEY_EMAIL_TTL = 24 * 60 * 60; // Без погружения в контекст - толковое значение не выбрать. Пусть будет сутки.
+
+    private const REDIS_KEY_ID_PREFIX = 'document:id:';
+    private const REDIS_KEY_ID_TTL = 60 * 60; // Без погружения в контекст - толковое значение не выбрать. Пусть будет один час.
 
     public function __construct(
         private readonly DB $db,
@@ -23,6 +27,14 @@ class Repository
      */
     public function findDocumentOrFail(string $id): array
     {
+        try {
+            $document = $this->redis->get(self::REDIS_KEY_ID_PREFIX . $id);
+            if (!empty($document)) {
+                return json_decode($document, JSON_UNESCAPED_UNICODE);
+            }
+        } catch (RedisException) {
+        }
+
         $document = $this->db
             ->select(['id', 'external_id', 'status', 'email', 'answer', 'created_at', 'updated_at'])
             ->from('documents')
@@ -41,9 +53,12 @@ class Repository
 
     public function findDocumentByEmail(string $email): string
     {
-        $document_id = $this->redis->get(self::REDIS_KEY_EMAIL_PREFIX . $email);
-        if (!empty($document_id)) {
-            return $document_id;
+        try {
+            $document_id = $this->redis->get(self::REDIS_KEY_EMAIL_PREFIX . $email);
+            if (!empty($document_id)) {
+                return $document_id;
+            }
+        } catch (RedisException) {
         }
 
         return $this->db
@@ -69,8 +84,11 @@ class Repository
             ])
             ->query();
 
-        if (!empty($email)) {
-            $this->redis->setex(self::REDIS_KEY_EMAIL_PREFIX . $email, self::REDIS_KEY_EMAIL_TTL, $id);
+        try {
+            if (!empty($email)) {
+                $this->redis->setex(self::REDIS_KEY_EMAIL_PREFIX . $email, self::REDIS_KEY_EMAIL_TTL, $id);
+            }
+        } catch (RedisException) {
         }
     }
 
@@ -88,5 +106,10 @@ class Repository
                 'id' => $id
             ])
             ->query();
+
+        try {
+            $this->redis->setex(self::REDIS_KEY_ID_PREFIX . $id, self::REDIS_KEY_ID_TTL, $payload);
+        } catch (RedisException) {
+        }
     }
 }
