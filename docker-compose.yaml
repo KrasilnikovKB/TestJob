@@ -1,0 +1,69 @@
+version: '3.8'
+services:
+
+    app:
+        build:
+          dockerfile: Dockerfile
+        command: 'php app.php start'
+        ports:
+            - "8000:8000"
+        environment:
+          - DB_HOST=127.0.0.1
+          - DB_PORT=3306
+          - DB_USER=root
+          - DB_PASS=root
+          - DB_NAME=test
+          - DB_CHARSET=utf8
+          - ATOL_BASE_URI=https://testonline.atol.ru/possystem/v5/
+          - ATOL_GROUP_CODE=v5-online-atol-ru_5179
+          - ATOL_LOGIN=v5-online-atol-ru
+          - ATOL_PASS=zUr0OxfI
+          - ATOL_CALLBACK_URL=
+          - REDIS_HOST=127.0.0.1
+          - REDIS_PORT=6379
+          - REDIS_PASSWORD=redis_password
+          - RABBITMQ_HOST=127.0.0.1
+          - RABBITMQ_USER=rmq
+          - RABBITMQ_PASS=rmq
+        depends_on:
+          - db
+          - redis
+          - rabbitmq
+        volumes:
+          - .:/app
+
+    db:
+      image: mariadb:10.3.27
+      volumes:
+        - ./docker/db-data:/var/lib/mysql
+        - ./docker/db-init:/docker-entrypoint-initdb.d
+      environment:
+        MYSQL_DATABASE: test
+        MYSQL_ROOT_PASSWORD: root
+        MYSQL_PASSWORD: root
+        MYSQL_USER: root
+      ports:
+        - "33060:3306"
+
+    rabbitmq:
+      image: rabbitmq:3.12.2-management-alpine
+      hostname: rabbitmq
+      restart: always
+      environment:
+        - RABBITMQ_DEFAULT_USER=rmq
+        - RABBITMQ_DEFAULT_PASS=rmq
+        - RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error},{default,error}] disk_free_limit 209715200
+      volumes:
+        - ./docker/rabbitmq:/var/lib/rabbitmq
+      ports:
+        - "15672:15672"
+        - "5672:5672"
+
+    redis:
+      image: redis:6.0.20-alpine3.18
+      restart: always
+      ports:
+        - '6379:6379'
+      command: redis-server --save 20 1 --loglevel warning --requirepass redis_password
+      volumes:
+        - ./docker/redis/data:/data
