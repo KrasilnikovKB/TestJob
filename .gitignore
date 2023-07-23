@@ -1,5 +1,6 @@
 /.idea
 /.vscode
 /vendor
-/docker
+/docker/db/data
+/docker/redis/data
 .env
