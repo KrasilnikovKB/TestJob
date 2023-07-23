@@ -11,6 +11,19 @@ use Workerman\MySQL\Connection as DB;
 require __DIR__ . '/../vendor/autoload.php';
 
 //TODO: так то бы надо сделать контейнер, но пока обойдёмся ручным DI
+$redis = new Redis();
+$redis->pconnect($_ENV['REDIS_HOST'], (int) ($_ENV['REDIS_PORT']));
+$redis->auth($_ENV['REDIS_PASSWORD']);
+
+$atol = (new Atol(
+    $redis,
+    $_ENV['ATOL_BASE_URI'],
+    $_ENV['ATOL_GROUP_CODE'],
+    $_ENV['ATOL_LOGIN'],
+    $_ENV['ATOL_PASS'],
+))->withCallbackUrl($_ENV['ATOL_CALLBACK_URL']);
+
+
 $db = new DB(
     $_ENV['DB_HOST'],
     $_ENV['DB_PORT'],
@@ -19,22 +32,9 @@ $db = new DB(
     $_ENV['DB_NAME'],
     $_ENV['DB_CHARSET'],
 );
-$repository = new Repository($db);
+$repository = new Repository($db, $redis);
 
-$redis = new Redis();
-$redis->pconnect($_ENV['REDIS_HOST'], (int) ($_ENV['REDIS_PORT']));
-$redis->auth($_ENV['REDIS_PASSWORD']);
-
-$atol = (new Atol(
-    $redis,
-        $_ENV['ATOL_BASE_URI'],
-    $_ENV['ATOL_GROUP_CODE'],
-    $_ENV['ATOL_LOGIN'],
-    $_ENV['ATOL_PASS'],
-))->withCallbackUrl($_ENV['ATOL_CALLBACK_URL']);
-
-
-$service = new Service($repository, $atol, $redis);
+$service = new Service($repository, $atol);
 $controller = new Controller($service);
 
 $app = AppFactory::create();

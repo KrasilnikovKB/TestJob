@@ -4,12 +4,18 @@ namespace App;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use Redis;
 use Workerman\MySQL\Connection as DB;
 
 class Repository
 {
-    public function __construct(private readonly DB $db)
-    {
+    private const REDIS_KEY_EMAIL_PREFIX = 'document:email:';
+    private const REDIS_KEY_EMAIL_TTL = 24 * 60 * 60; // Без погружения в контекст - толковое значение не выбрать. Пусть будет сутки.
+
+    public function __construct(
+        private readonly DB $db,
+        private readonly Redis $redis
+    ) {
     }
 
     /**
@@ -35,6 +41,11 @@ class Repository
 
     public function findDocumentByEmail(string $email): string
     {
+        $document_id = $this->redis->get(self::REDIS_KEY_EMAIL_PREFIX . $email);
+        if (!empty($document_id)) {
+            return $document_id;
+        }
+
         return $this->db
             ->select('id')
             ->from('documents')
@@ -45,7 +56,7 @@ class Repository
             ->single();
     }
 
-    public function createDocument(string $id, string $external_id, string $status, string $email, string $payload): void
+    public function createDocument(string $id, string $external_id, string $status, ?string $email, string $payload): void
     {
         $this->db
             ->insert('documents')
@@ -55,9 +66,12 @@ class Repository
                 'status'      => $status,
                 'email'       => $email,
                 'answer'      => $payload,
-
             ])
             ->query();
+
+        if (!empty($email)) {
+            $this->redis->setex(self::REDIS_KEY_EMAIL_PREFIX . $email, self::REDIS_KEY_EMAIL_TTL, $id);
+        }
     }
 
     public function updateDocument(string $id, string $status, string $payload): void

@@ -4,14 +4,12 @@ namespace App;
 
 use App\atol\Atol;
 use GuzzleHttp\Exception\GuzzleException;
-use Redis;
 
 class Service
 {
     public function __construct(
         private readonly Repository $repository,
-        private readonly Atol       $atol,
-        private readonly Redis      $redis) {
+        private readonly Atol       $atol) {
     }
 
     /**
