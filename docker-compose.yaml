@@ -8,8 +8,6 @@ services:
         ports:
             - "8000:8000"
         environment:
-          - APP_PORT=8000
-          - APP_DEBUG=true
           - DB_HOST=127.0.0.1
           - DB_PORT=3306
           - DB_USER=root
@@ -21,7 +19,6 @@ services:
           - ATOL_LOGIN=v5-online-atol-ru
           - ATOL_PASS=zUr0OxfI
           - ATOL_CALLBACK_URL=
-          - ATOL_TIMER_AUTH_REFRESH=60
           - REDIS_HOST=127.0.0.1
           - REDIS_PORT=6379
           - REDIS_PASSWORD=redis_password
@@ -39,7 +36,7 @@ services:
       image: mariadb:10.3.27
       volumes:
         - ./docker/db-data:/var/lib/mysql
-#        - ./docker/db-init:/docker-entrypoint-initdb.d
+        - ./docker/db-init:/docker-entrypoint-initdb.d
       environment:
         MYSQL_DATABASE: test
         MYSQL_ROOT_PASSWORD: root

@@ -5,9 +5,16 @@ namespace App\atol;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;
+use Redis;
 
 class Atol
 {
+    public const STATUS_WAIT = 'wait';
+    public const STATUS_DONE = 'done'; // я не в курсе какой там финальный статус обработки документа, но он должен же быть ? )))
+
+    private const REDIS_TOKEN_KEY = 'atol:token';
+    private const REDIS_TOKEN_TTL = 24 * 60 * 60 - 60; // По документации токен выдаётся на сутки, удалим его на минуту раньше.
+
     private const MAX_AUTH_RETRY = 2;
 
     private string $callback_url = '';
@@ -58,6 +65,7 @@ class Atol
      * @throws GuzzleException
      */
     public function __construct(
+        private readonly Redis $redis,
         private readonly string $base_uri,
         private readonly string $group_code,
         private readonly string $login,
@@ -75,16 +83,16 @@ class Atol
     /**
      * Чек «Приход»
      *
-     * @throws Exception
      * @throws GuzzleException
      */
-    public function sell(string $email, string $sno, string $inn, string $payment_address): array
+    public function sell(string $id, string $email, string $sno, string $inn, string $payment_address): array
     {
         $payload = self::TEMPLATE_BODY_SELL_REQUEST;
+        $payload['external_id'] = $id;
         $payload['receipt']['company'] = compact('email', 'sno', 'inn', 'payment_address');
 
         // исключительно как намёк, на то что так бы было быстрей получать статусы,
-        // что не исключает необходимости проверки статусов "просроченных" документов
+        // что не исключает необходимости проверки "просроченных" документов.
         if (!empty($this->callback_url )) {
             $payload['service']['callback_url'] = $this->callback_url;
         }
@@ -96,6 +104,9 @@ class Atol
         );
     }
 
+    /**
+     * @throws GuzzleException
+     */
     public function report(string $id): array
     {
         return $this->doRequest('GET', "{$this->getGroupCode()}/report/{$id}");
@@ -131,10 +142,13 @@ class Atol
         $response = $client->request($method, $uri, $options);
 
         if ($response->getStatusCode() === 401) {
-            $this->token = ''; //TODO: при использовании редиса для кеширования токена - обнулить его и там
-            $this->login();
-            return $this->doRequest($method, $uri, $body, $timeout_sec);
+            $this->token = '';
+            $this->redis->del(self::REDIS_TOKEN_KEY);
+            $this->refreshToken();
+            return $this->doRequest($method, $uri, $body, $timeout_sec); // что бы не застрять в рекурсии, как Коуб в лимбе, как раз и используем ограничение self::MAX_AUTH_RETRY.
         }
+
+        // Вот тут по началу кидал исключение если код ответа не 200, но не тут-то было ( таков протокол… Придётся как то с этим жить (
 
         $content = $response->getBody()->getContents();
 
@@ -150,9 +164,11 @@ class Atol
     /**
      * @throws Exception|GuzzleException
      */
-    public function login(): void
+    private function login(): void
     {
-        if ($this->isAuthorized()) {
+        $this->token = $this->redis->get(self::REDIS_TOKEN_KEY);
+
+        if ($this->token !== false) {
             return;
         }
 
@@ -163,12 +179,8 @@ class Atol
      * @throws GuzzleException
      * @throws Exception
      */
-    public function refreshToken(): void
+    private function refreshToken(): void
     {
-        // Благодаря тому, что приложение запущено через WorkerMan,
-        // мы получаем не классическую ПХП-схему, когда каждый запрос живёт своей жизнью,
-        // а что-то похожее на GO-микросервис с общими переменными и долгоживущими экземплярами объектов...
-
         $this->auth_retry_counter++;
         if ($this->auth_retry_counter > self::MAX_AUTH_RETRY) {
             throw new Exception('Retry auth counter exceeded');
@@ -184,12 +196,7 @@ class Atol
 
         $this->auth_retry_counter = 0;
         $this->token = $token;
-        echo "refresh token {$token}\n";
-    }
-
-    private function isAuthorized(): bool
-    {
-        return !empty($this->token);
+        $this->redis->setex(self::REDIS_TOKEN_KEY, self::REDIS_TOKEN_TTL, $token); //TODO: да. два инстанса могут поочерёдно обновлять токен, но сейчас с мьютексами заморачиваться нет желания
     }
 
     /**
