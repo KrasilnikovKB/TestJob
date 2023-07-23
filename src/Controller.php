@@ -38,10 +38,10 @@ class Controller
 
         try {
             $document_id = $this->service->registerDocumentSell(
-                $data['email'],
                 $data['sno'],
                 $data['inn'],
-                $data['payment_address']
+                $data['payment_address'],
+                $data['email'] === '' ? null : $data['email']
             );
             return $response->write("Документ зарегистрирован. Для проверки статуса используйте <a href='/status/{$document_id}' target='_blank'>ссылку</a>");
 

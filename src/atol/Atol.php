@@ -85,11 +85,16 @@ class Atol
      *
      * @throws GuzzleException
      */
-    public function sell(string $id, string $email, string $sno, string $inn, string $payment_address): array
+    public function sell(string $id, ?string $email, string $sno, string $inn, string $payment_address): array
     {
         $payload = self::TEMPLATE_BODY_SELL_REQUEST;
         $payload['external_id'] = $id;
-        $payload['receipt']['company'] = compact('email', 'sno', 'inn', 'payment_address');
+        $payload['receipt']['company'] = [
+            'email'           => $email ?? 'none',
+            'sno'             => $sno,
+            'inn'             => $inn,
+            'payment_address' => $payment_address,
+        ];
 
         // исключительно как намёк, на то что так бы было быстрей получать статусы,
         // что не исключает необходимости проверки "просроченных" документов.

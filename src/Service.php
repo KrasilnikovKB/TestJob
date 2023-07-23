@@ -8,7 +8,6 @@ use Redis;
 
 class Service
 {
-
     public function __construct(
         private readonly Repository $repository,
         private readonly Atol       $atol,
@@ -21,12 +20,15 @@ class Service
      * @throws RegisterDocumentException
      * @throws GuzzleException
      */
-    public function registerDocumentSell(string $email, string $sno, string $inn, string $payment_address): string
+    public function registerDocumentSell(string $sno, string $inn, string $payment_address, ?string $email = null): string
     {
-        $document_id = $this->repository->findDocumentByEmail($email);
-        if (!empty($document_id)) {
-            throw new HasDocumentWithSameEmailException('Document for this email already exist'); // странное бизнес-правило, но раз надо так надо
+        if (!empty($email)) {
+            $document_id = $this->repository->findDocumentByEmail($email);
+            if (!empty($document_id)) {
+                throw new HasDocumentWithSameEmailException('Document for this email already exist'); // странное бизнес-правило, но раз надо так надо
+            }
         }
+
 
         $id = self::uuidV4(); // таки сгенерируем свой id документа, а то как-то вообще непонятно ТЗ… всё крутится вокруг одного документа
         $atol_result = $this->atol->sell($id, $email, $sno, $inn, $payment_address);
@@ -34,7 +36,7 @@ class Service
         if ($atol_result['status'] !== Atol::STATUS_WAIT) {
             throw new RegisterDocumentException('Register document failed', $atol_result['error']);
         }
-
+        //TODO: тут конечно печалька. В АТОЛ уже отправили запрос, а запись в БД ещё и вальнуться может ((
         $this->repository->createDocument(
             $id,
             $atol_result['uuid'],
