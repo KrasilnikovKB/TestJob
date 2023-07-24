@@ -16,10 +16,17 @@ class Repository
     private const REDIS_KEY_ID_PREFIX = 'document:id:';
     private const REDIS_KEY_ID_TTL = 60 * 60; // Без погружения в контекст - толковое значение не выбрать. Пусть будет один час.
 
-    public function __construct(
-        private readonly DB $db,
-        private readonly Redis $redis
-    ) {
+    private ?Redis $redis = null;
+
+    public function __construct(private readonly DB $db)
+    {
+    }
+
+    public function withRedis(Redis $redis): self
+    {
+        $this->redis = $redis;
+
+        return $this;
     }
 
     /**
@@ -27,12 +34,9 @@ class Repository
      */
     public function findDocumentOrFail(string $id): array
     {
-        try {
-            $document = $this->redis->get(self::REDIS_KEY_ID_PREFIX . $id);
-            if (!empty($document)) {
-                return json_decode($document, JSON_UNESCAPED_UNICODE);
-            }
-        } catch (RedisException) {
+        $document = $this->getDocumentFromRedis($id);
+        if (!empty($document)) {
+            return $document;
         }
 
         $document = $this->db
@@ -53,12 +57,9 @@ class Repository
 
     public function findDocumentByEmail(string $email): string
     {
-        try {
-            $document_id = $this->redis->get(self::REDIS_KEY_EMAIL_PREFIX . $email);
-            if (!empty($document_id)) {
-                return $document_id;
-            }
-        } catch (RedisException) {
+        $document_id = $this->getDocumentIdFromRedisByEmail($email);
+        if (!empty($document_id)) {
+            return $document_id;
         }
 
         return $this->db
@@ -84,12 +85,7 @@ class Repository
             ])
             ->query();
 
-        try {
-            if (!empty($email)) {
-                $this->redis->setex(self::REDIS_KEY_EMAIL_PREFIX . $email, self::REDIS_KEY_EMAIL_TTL, $id);
-            }
-        } catch (RedisException) {
-        }
+        $this->storeUsedEmailAtRedis($email, $id);
     }
 
     public function updateDocument(string $id, string $status, string $payload): void
@@ -106,6 +102,61 @@ class Repository
                 'id' => $id
             ])
             ->query();
+
+        $this->storeDocumentAtRedis($id, $payload);
+    }
+
+    private function getDocumentIdFromRedisByEmail(string $email): ?string
+    {
+        if ($this->redis === null) {
+            return null;
+        }
+
+        try {
+            $document_id = $this->redis->get(self::REDIS_KEY_EMAIL_PREFIX . $email);
+            if (!empty($document_id)) {
+                return $document_id;
+            }
+        } catch (RedisException) {
+        }
+
+        return  null;
+    }
+
+    private function storeUsedEmailAtRedis(string $email, string $id): void
+    {
+        if (empty($email) || $this->redis === null) {
+            return;
+        }
+
+        try {
+            $this->redis->setex(self::REDIS_KEY_EMAIL_PREFIX . $email, self::REDIS_KEY_EMAIL_TTL, $id);
+        } catch (RedisException) {
+        }
+    }
+
+    private function getDocumentFromRedis(string $id): ?array
+    {
+        if ($this->redis === null) {
+            return null;
+        }
+
+        try {
+            $document = $this->redis->get(self::REDIS_KEY_ID_PREFIX . $id);
+            if (!empty($document)) {
+                return json_decode($document, JSON_UNESCAPED_UNICODE);
+            }
+        } catch (RedisException) {
+        }
+
+        return  null;
+    }
+
+    private function storeDocumentAtRedis(string $id, string $payload): void
+    {
+        if ($this->redis === null) {
+            return;
+        }
 
         try {
             $this->redis->setex(self::REDIS_KEY_ID_PREFIX . $id, self::REDIS_KEY_ID_TTL, $payload);

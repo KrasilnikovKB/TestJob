@@ -32,7 +32,7 @@ $db = new DB(
     $_ENV['DB_NAME'],
     $_ENV['DB_CHARSET'],
 );
-$repository = new Repository($db, $redis);
+$repository = (new Repository($db))->withRedis($redis);
 
 $service = new Service($repository, $atol);
 $controller = new Controller($service);
